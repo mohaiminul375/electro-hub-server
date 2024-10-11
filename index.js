@@ -4,7 +4,7 @@ const port = process.env.PORT || 5000;
 const cors = require("cors");
 require("dotenv").config();
 const { MongoClient, ServerApiVersion } = require('mongodb');
-
+const bcrypt = require('bcrypt');
 // middleware
 app.use(express.json());
 app.use(cors({
@@ -47,8 +47,10 @@ async function run() {
             if (existed) {
                 return res.status(409).json({ message: 'User already exists' }); // 409 Conflict status for existing resource
             }
+            // hashed password
+            const hashedPass = bcrypt.hashSync(user_info.password, 10);
             // Insert new user
-            const result = await userCollection.insertOne(user_info);
+            const result = await userCollection.insertOne({ ...user_info, password: hashedPass });
             return res.status(201).send(result); // Send success response with 201 Created status
         });
 
