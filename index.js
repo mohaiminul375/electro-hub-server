@@ -34,7 +34,24 @@ async function run() {
         // collection
         const userCollection = client.db('electro-hub').collection('users');
 
-
+        // 
+        app.post('/login', async (req, res) => {
+            const user = req.body;
+            console.log(user)
+            const query = { email: user.email };
+            const existedUser = await userCollection.findOne(query);
+            // Check if the user exists
+            if (!existedUser) {
+                return res.status(404).json({ message: "User not found" });
+            }
+            const passwordMatched = await bcrypt.compare(user.password, existedUser.password);
+            // Check if the password matched
+            if (!passwordMatched) {
+                return res.status(401).json({ message: "Invalid password" });
+            }
+            // Successful login
+            return res.status(200).json({ message: "Login successful", user: existedUser });
+        });
 
 
 
