@@ -31,6 +31,26 @@ async function run() {
         // await client.connect();
 
 
+        // collection
+        const userCollection = client.db('electro-hub').collection('users');
+
+
+
+
+
+        // post user
+        app.post('/users', async (req, res) => {
+            const user_info = req.body;
+            const query = { email: user_info.email };
+            // Check if user already exists
+            const existed = await userCollection.findOne(query);
+            if (existed) {
+                return res.status(409).json({ message: 'User already exists' }); // 409 Conflict status for existing resource
+            }
+            // Insert new user
+            const result = await userCollection.insertOne(user_info);
+            return res.status(201).send(result); // Send success response with 201 Created status
+        });
 
 
 
@@ -38,7 +58,8 @@ async function run() {
 
 
 
-        
+
+
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
