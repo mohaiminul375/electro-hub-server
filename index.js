@@ -52,7 +52,19 @@ async function run() {
             // Successful login
             return res.status(200).json({ message: "Login successful", user: existedUser });
         });
-
+        //    social login
+        app.post('/social-login', async (req, res) => {
+            const user = req.body;
+            const query = { email: user.email };
+            const isExisted = await userCollection.findOne(query);
+            if (isExisted) {
+                return res.status(200).json({ message: 'User already exists' });
+            }
+            else {
+                const result = await userCollection.insertOne({ ...user, role: 'user' });
+                res.status(201).json({ message: 'User created successfully', result });
+            }
+        })
 
 
         // post user
