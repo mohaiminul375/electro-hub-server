@@ -34,7 +34,22 @@ async function run() {
         // collection
         const userCollection = client.db('electro-hub').collection('users');
 
-        // 
+
+
+        // get all users
+        app.get('/all-users', async (req, res) => {
+            try {
+                const result = await userCollection.find({}, { projection: { password: 0 } }).toArray();
+                res.send(result);
+            } catch (error) {
+                res.status(500).send({ message: 'Failed to fetch users', error });
+            }
+        });
+
+
+
+
+        // login with email password
         app.post('/login', async (req, res) => {
             const user = req.body;
             console.log(user)
