@@ -3,7 +3,7 @@ const app = express();
 const port = process.env.PORT || 5000;
 const cors = require("cors");
 require("dotenv").config();
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const bcrypt = require('bcrypt');
 // middleware
 app.use(express.json());
@@ -46,7 +46,20 @@ async function run() {
             }
         });
 
-
+        // delete user
+        app.delete('/all-users/:id', async (req, res) => {
+            try {
+                const userId = req.params.id;
+                console.log(userId)
+                const query = { _id: new ObjectId(userId) }
+                console.log(query)
+                const result = await userCollection.deleteOne(query)
+                res.send(result);
+            }
+            catch (error) {
+                res.status(500).send({ message: 'An error occurred while deleting the user.' });
+            }
+        })
 
 
         // login with email password
