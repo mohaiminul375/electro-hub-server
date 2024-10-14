@@ -33,9 +33,9 @@ async function run() {
 
         // collection
         const userCollection = client.db('electro-hub').collection('users');
+        const productsCollection = client.db('electro-hub').collection('all-products');
 
-
-
+        // manage all user
         // get all users
         app.get('/all-users', async (req, res) => {
             try {
@@ -60,7 +60,6 @@ async function run() {
                 res.status(500).send({ message: 'An error occurred while deleting the user.' });
             }
         })
-
 
         // login with email password
         app.post('/login', async (req, res) => {
@@ -94,7 +93,6 @@ async function run() {
             }
         })
 
-
         // post user
         app.post('/users', async (req, res) => {
             const user_info = req.body;
@@ -110,6 +108,22 @@ async function run() {
             const result = await userCollection.insertOne({ ...user_info, password: hashedPass });
             return res.status(201).send(result); // Send success response with 201 Created status
         });
+
+
+        // manage products
+        // get all products
+        app.get('/all-products', async (req, res) => {
+            const result = await productsCollection.find().toArray() || [];
+            res.send(result);
+        })
+        // add a new product
+        app.post('/all-products', async (req, res) => {
+            const newProduct = req.body;
+            const result = await productsCollection.insertOne(newProduct);
+            res.send(result)
+        })
+
+
 
 
 
