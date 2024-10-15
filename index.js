@@ -109,7 +109,6 @@ async function run() {
             return res.status(201).send(result); // Send success response with 201 Created status
         });
 
-
         // manage products
         // get all products
         app.get('/all-products', async (req, res) => {
