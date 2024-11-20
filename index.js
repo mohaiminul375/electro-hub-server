@@ -109,6 +109,7 @@ async function run() {
             return res.status(201).send(result); // Send success response with 201 Created status
         });
 
+        // admin-dashboard
         // manage products
         // get all products
         app.get('/all-products', async (req, res) => {
@@ -119,6 +120,11 @@ async function run() {
         app.post('/all-products', async (req, res) => {
             const newProduct = req.body;
             const result = await productsCollection.insertOne(newProduct);
+            res.send(result)
+        })
+        // get products for admin
+        app.get('/all-products-admin', async (req, res) => {
+            const result = await productsCollection.find().toArray() || [];
             res.send(result)
         })
 
