@@ -105,16 +105,16 @@ async function run() {
             // hashed password
             const hashedPass = bcrypt.hashSync(user_info.password, 10);
             // Insert new user
-            const result = await userCollection.insertOne({ ...user_info, password: hashedPass });
+            const result = await userCollection.insertOne({ ...user_info, password: hashedPass, role: 'user' });
             return res.status(201).send(result); // Send success response with 201 Created status
         });
 
         // admin-dashboard
         // manage products
-        // get all products
-        app.get('/all-products', async (req, res) => {
+        // get products for admin
+        app.get('/all-products-admin', async (req, res) => {
             const result = await productsCollection.find().toArray() || [];
-            res.send(result);
+            res.send(result)
         })
         // add a new product
         app.post('/all-products', async (req, res) => {
@@ -122,10 +122,17 @@ async function run() {
             const result = await productsCollection.insertOne(newProduct);
             res.send(result)
         })
-        // get products for admin
-        app.get('/all-products-admin', async (req, res) => {
+        // delete a product
+        
+
+
+
+
+        // product manage for customer/user
+        // get all products
+        app.get('/all-products', async (req, res) => {
             const result = await productsCollection.find().toArray() || [];
-            res.send(result)
+            res.send(result);
         })
         //    get product by id
         app.get('/all-products/:id', async (req, res) => {
