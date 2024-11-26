@@ -123,7 +123,12 @@ async function run() {
             res.send(result)
         })
         // delete a product
-        
+        app.delete('/all-products-admin/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await productsCollection.deleteOne(query);
+            res.send(result)
+        })
 
 
 
