@@ -34,7 +34,9 @@ async function run() {
         // collection
         const userCollection = client.db('electro-hub').collection('users');
         const productsCollection = client.db('electro-hub').collection('all-products');
+        const cartCollection = client.db('electro-hub').collection('cart');
 
+        // TODO: try catch
         // manage all user
         // get all users
         app.get('/all-users', async (req, res) => {
@@ -79,8 +81,8 @@ async function run() {
             // Successful login
             return res.status(200).json({ message: "Login successful", user: existedUser });
         });
-        //    social login
-        app.post('/social-login', async (req, res) => {
+        //   create social account  
+        app.post('/social-account', async (req, res) => {
             const user = req.body;
             const query = { email: user.email };
             const isExisted = await userCollection.findOne(query);
@@ -92,8 +94,26 @@ async function run() {
                 res.status(201).json({ message: 'User created successfully', result });
             }
         })
+        // social login
+        app.post('/social-login', async (req, res) => {
+            try {
+                const user = req.body;
+                console.log(user);
 
-        // post user
+                const query = { email: user.email };
+                const isExisted = await userCollection.findOne(query);
+
+                if (!isExisted) {
+                    return res.status(200).json({ message: 'User does not exist' });
+                }
+
+                return res.status(200).json({ message: "Login successful", socialUser: isExisted });
+            } catch (error) {
+                console.error("Error during social login:", error);
+                return res.status(500).json({ message: "An error occurred during login", error: error.message });
+            }
+        });
+        // post user create new user
         app.post('/users', async (req, res) => {
             const user_info = req.body;
             const query = { email: user_info.email };
