@@ -37,6 +37,7 @@ async function run() {
         const cartCollection = client.db('electro-hub').collection('cart');
 
         // TODO: try catch
+
         // manage all user
         // get all users
         app.get('/all-users', async (req, res) => {
@@ -47,6 +48,7 @@ async function run() {
                 res.status(500).send({ message: 'Failed to fetch users', error });
             }
         });
+
 
         // delete user
         app.delete('/all-users/:id', async (req, res) => {
@@ -62,6 +64,7 @@ async function run() {
                 res.status(500).send({ message: 'An error occurred while deleting the user.' });
             }
         })
+
 
         // login with email password
         app.post('/login', async (req, res) => {
@@ -81,6 +84,8 @@ async function run() {
             // Successful login
             return res.status(200).json({ message: "Login successful", user: existedUser });
         });
+
+
         //   create social account  
         app.post('/social-account', async (req, res) => {
             const user = req.body;
@@ -94,6 +99,8 @@ async function run() {
                 res.status(201).json({ message: 'User created successfully', result });
             }
         })
+
+
         // social login
         app.post('/social-login', async (req, res) => {
             try {
@@ -113,6 +120,8 @@ async function run() {
                 return res.status(500).json({ message: "An error occurred during login", error: error.message });
             }
         });
+
+
         // post user create new user
         app.post('/users', async (req, res) => {
             const user_info = req.body;
@@ -128,6 +137,45 @@ async function run() {
             const result = await userCollection.insertOne({ ...user_info, password: hashedPass, role: 'user' });
             return res.status(201).send(result); // Send success response with 201 Created status
         });
+
+        // update user
+        // update profile
+        app.put('/update-profile', async (req, res) => {
+            const user_info = req.body;
+            const email = user_info.email;
+            const query = { email: email };
+            const option = { upsert: true };
+
+            if (!email) {
+                return res.status(400).json({ message: 'Email is required' });
+            }
+
+            const info = {
+                $set: {
+                    ...user_info
+                }
+            };
+
+            try {
+                // Update user info in the database
+                const result = await userCollection.updateOne(query, info, option);
+
+                // Return the result of the update operation
+                res.status(200).json({ message: 'User profile updated successfully', result });
+            } catch (error) {
+                // Handle errors
+                console.error(error);
+                res.status(500).json({ message: 'Server error occurred while updating the profile' });
+            }
+        });
+
+
+
+
+
+
+
+
 
         // admin-dashboard
         // manage products
