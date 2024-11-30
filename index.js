@@ -149,7 +149,7 @@ async function run() {
             if (!email) {
                 return res.status(400).json({ message: 'Email is required' });
             }
-
+// updated info
             const info = {
                 $set: {
                     ...user_info
@@ -168,6 +168,37 @@ async function run() {
                 res.status(500).json({ message: 'Server error occurred while updating the profile' });
             }
         });
+        // update address
+        app.put('/update-address', async (req, res) => {
+            const address_info = req.body;
+            const email = address_info.email;
+            // Validation for required fields
+            if (!email) {
+                return res.status(400).json({ message: 'Email is required' });
+            }
+            const { division, district, full_address } = address_info;
+            const query = { email: email };
+            const option = { upsert: true };
+            // updated info
+            const address = {
+                $set: {
+                    address: {
+                        division: division,
+                        district: district,
+                        full_address: full_address,
+                    },
+                },
+            };
+
+            try {
+                await userCollection.updateOne(query, address, option);
+                res.status(200).json({ message: 'Address updated or created successfully' });
+            } catch (error) {
+                console.error('Error updating address:', error);
+                res.status(500).json({ message: 'Internal server error' });
+            }
+        });
+
 
 
 
