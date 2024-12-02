@@ -5,6 +5,7 @@ const cors = require("cors");
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const bcrypt = require('bcrypt');
+const { v4: uuidv4 } = require('uuid');
 // middleware
 app.use(express.json());
 app.use(cors({
@@ -66,6 +67,39 @@ async function run() {
         })
 
 
+
+        // create user
+        // post user create new user
+        app.post('/users', async (req, res) => {
+            const user_info = req.body;
+            const query = { email: user_info.email };
+            // Check if user already exists
+            const existed = await userCollection.findOne(query);
+            if (existed) {
+                return res.status(409).json({ message: 'User already exists' });
+            }
+            // hashed password
+            const hashedPass = bcrypt.hashSync(user_info.password, 10);
+            // Insert new user
+            const result = await userCollection.insertOne({ ...user_info, password: hashedPass, role: 'user' });
+            return res.status(201).send(result);
+        });
+
+
+        //   create social account  
+        app.post('/social-account', async (req, res) => {
+            const user = req.body;
+            const query = { email: user.email };
+            const isExisted = await userCollection.findOne(query);
+            if (isExisted) {
+                return res.status(200).json({ message: 'User already exists' });
+            }
+            else {
+                const result = await userCollection.insertOne({ ...user, role: 'user' });
+                res.status(201).json({ message: 'User created successfully', result });
+            }
+        })
+        // login
         // login with email password
         app.post('/login', async (req, res) => {
             const user = req.body;
@@ -86,21 +120,6 @@ async function run() {
         });
 
 
-        //   create social account  
-        app.post('/social-account', async (req, res) => {
-            const user = req.body;
-            const query = { email: user.email };
-            const isExisted = await userCollection.findOne(query);
-            if (isExisted) {
-                return res.status(200).json({ message: 'User already exists' });
-            }
-            else {
-                const result = await userCollection.insertOne({ ...user, role: 'user' });
-                res.status(201).json({ message: 'User created successfully', result });
-            }
-        })
-
-
         // social login
         app.post('/social-login', async (req, res) => {
             try {
@@ -119,23 +138,6 @@ async function run() {
                 console.error("Error during social login:", error);
                 return res.status(500).json({ message: "An error occurred during login", error: error.message });
             }
-        });
-
-
-        // post user create new user
-        app.post('/users', async (req, res) => {
-            const user_info = req.body;
-            const query = { email: user_info.email };
-            // Check if user already exists
-            const existed = await userCollection.findOne(query);
-            if (existed) {
-                return res.status(409).json({ message: 'User already exists' }); // 409 Conflict status for existing resource
-            }
-            // hashed password
-            const hashedPass = bcrypt.hashSync(user_info.password, 10);
-            // Insert new user
-            const result = await userCollection.insertOne({ ...user_info, password: hashedPass, role: 'user' });
-            return res.status(201).send(result); // Send success response with 201 Created status
         });
 
         // update user
@@ -199,7 +201,7 @@ async function run() {
             }
         });
 
-
+        // update role
 
 
 
@@ -256,6 +258,7 @@ async function run() {
                 res.status(500).send({ error: 'An error occurred while fetching products.' });
             }
         });
+        // update a product
 
 
 
@@ -287,15 +290,7 @@ async function run() {
         app.get('/products/:category', async (req, res) => {
             const category = req.params.category;
             const { brand, color, sort } = req.query;
-
-            console.log(brand, color, sort);
-
             try {
-                // Ensure the category is passed in the URL
-                if (!category) {
-                    return res.status(400).json({ message: 'Category is required' });
-                }
-
                 // Initialize the query object with the category
                 const query = { category: category };
 
@@ -317,10 +312,7 @@ async function run() {
                     sortOptions.product_price = 1; // Sort by price ascending
                 }
 
-                // Query the database with the category filter and optional sorting
                 const result = await productsCollection.find(query).sort(sortOptions).toArray();
-
-                // Send the response with the filtered products
                 res.status(200).send(result || []);
             } catch (error) {
                 console.error('Error fetching products by category:', error.message);
@@ -334,10 +326,11 @@ async function run() {
 
 
 
-
-
-
-
+        app.get('/test', async (req, res) => {
+            const new_id_1 = uuidv4();
+            const new_id = new_id_1.replace(/-/g, '').substring(0, 10);
+            res.send({ new_id, new_id_1 })
+        })
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
@@ -347,23 +340,6 @@ async function run() {
     }
 }
 run().catch(console.dir);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // test server
 app.get('/', (req, res) => {
     res.send('electro-hub server is working')
