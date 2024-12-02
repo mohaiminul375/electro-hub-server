@@ -149,7 +149,7 @@ async function run() {
             if (!email) {
                 return res.status(400).json({ message: 'Email is required' });
             }
-// updated info
+            // updated info
             const info = {
                 $set: {
                     ...user_info
@@ -212,15 +212,53 @@ async function run() {
         // manage products
         // get products for admin
         app.get('/all-products-admin', async (req, res) => {
+            // const brand = req.query.brand;
+            // const price = req.query.price;
+            // const color = req.query.color;
+            // const query = {
+            //     $or: [
+            //         { brand:}
+            //     ]
+            // }
             const result = await productsCollection.find().toArray() || [];
             res.send(result)
         })
         // add a new product
-        app.post('/all-products', async (req, res) => {
-            const newProduct = req.body;
-            const result = await productsCollection.insertOne(newProduct);
-            res.send(result)
-        })
+        app.get('/all-products', async (req, res) => {
+            try {
+                const { brand, color, sort } = req.query;
+                const query = {};
+                // append brand color
+                if (brand && brand !== '') {
+                    query.brand = brand;
+                }
+                if (color && color !== '') {
+                    query.color = color;
+                }
+
+                // Sorting logic: default to ascending if sort is invalid
+                let sortOptions = {};
+                if (sort === 'high-to-low') {
+                    sortOptions = { product_price: -1 }; // Descending
+                } else if (sort === 'low-to-high') {
+                    sortOptions = { product_price: 1 }; // Ascending
+                }
+
+                // Fetch products based on the query and sort options
+                const result = await productsCollection
+                    .find(query)
+                    .sort(sortOptions)
+                    .toArray();
+
+                res.send(result);
+            } catch (error) {
+                console.error(error);
+                res.status(500).send({ error: 'An error occurred while fetching products.' });
+            }
+        });
+
+
+
         // delete a product
         app.delete('/all-products-admin/:id', async (req, res) => {
             const id = req.params.id;
@@ -245,6 +283,19 @@ async function run() {
             const result = await productsCollection.findOne(query);
             res.send(result);
         })
+        //    get product by category
+        app.get('/products/:category', async (req, res) => {
+            const category = req.params.category;
+
+            try {
+                const query = { category: category };
+                const result = await productsCollection.find(query).toArray();
+                res.status(200).send(result || []);
+            } catch (error) {
+                console.error('Error fetching products by category:', error.message);
+                res.status(500).json({ message: 'Internal Server Error' });
+            }
+        });
 
 
 
