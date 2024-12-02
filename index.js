@@ -271,11 +271,11 @@ async function run() {
 
 
         // product manage for customer/user
-        // get all products
-        app.get('/all-products', async (req, res) => {
-            const result = await productsCollection.find().toArray() || [];
-            res.send(result);
-        })
+        // get all products //TOD: check is needed
+        // app.get('/all-products', async (req, res) => {
+        //     const result = await productsCollection.find().toArray() || [];
+        //     res.send(result);
+        // })
         //    get product by id
         app.get('/all-products/:id', async (req, res) => {
             const id = req.params.id;
@@ -286,16 +286,48 @@ async function run() {
         //    get product by category
         app.get('/products/:category', async (req, res) => {
             const category = req.params.category;
+            const { brand, color, sort } = req.query;
+
+            console.log(brand, color, sort);
 
             try {
+                // Ensure the category is passed in the URL
+                if (!category) {
+                    return res.status(400).json({ message: 'Category is required' });
+                }
+
+                // Initialize the query object with the category
                 const query = { category: category };
-                const result = await productsCollection.find(query).toArray();
+
+                // Add brand filter if provided
+                if (brand) {
+                    query.brand = brand;
+                }
+
+                // Add color filter if provided
+                if (color) {
+                    query.color = color;
+                }
+
+                // Set up sorting based on the sort query parameter
+                let sortOptions = {};
+                if (sort === 'high-to-low') {
+                    sortOptions.product_price = -1; // Sort by price descending
+                } else if (sort === 'low-to-high') {
+                    sortOptions.product_price = 1; // Sort by price ascending
+                }
+
+                // Query the database with the category filter and optional sorting
+                const result = await productsCollection.find(query).sort(sortOptions).toArray();
+
+                // Send the response with the filtered products
                 res.status(200).send(result || []);
             } catch (error) {
                 console.error('Error fetching products by category:', error.message);
                 res.status(500).json({ message: 'Internal Server Error' });
             }
         });
+
 
 
 
