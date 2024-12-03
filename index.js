@@ -97,8 +97,10 @@ async function run() {
 
                 // Insert the new user
                 try {
+                    const uuid = uuidv4().replace(/-/g, '').substring(0, 10);
                     const result = await userCollection.insertOne({
                         ...user_info,
+                        uuid: uuid,
                         password: hashedPass,
                         role: 'user',
                     });
@@ -218,12 +220,17 @@ async function run() {
         // update profile
         app.put('/update-profile', async (req, res) => {
             const user_info = req.body;
-            const email = user_info.email;
-            const query = { email: email };
+            console.log(user_info)
+            const uuid = user_info.uuid;
+            const query = { uuid: uuid };
             const option = { upsert: true };
 
-            if (!email) {
-                return res.status(400).json({ message: 'Email is required' });
+            if (!uuid) {
+                return res.status(400).json({ message: 'Unauthorized access' });
+            }
+            const isExisted = await userCollection.findOne(query);
+            if (!isExisted) {
+                return res.status(400).json({ message: 'access denied please contact to support' });
             }
             // updated info
             const info = {
