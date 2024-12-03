@@ -11,6 +11,7 @@ app.use(express.json());
 app.use(cors({
     origin: [
         "http://localhost:3000",
+
     ]
 }))
 
@@ -30,7 +31,6 @@ async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
         // await client.connect();
-
 
         // collection
         const userCollection = client.db('electro-hub').collection('users');
@@ -65,7 +65,6 @@ async function run() {
                 res.status(500).send({ message: 'An error occurred while deleting the user.' });
             }
         })
-
 
 
         // create user
@@ -254,14 +253,18 @@ async function run() {
         // update address
         app.put('/update-address', async (req, res) => {
             const address_info = req.body;
-            const email = address_info.email;
+            const uuid = address_info.uuid;
             // Validation for required fields
-            if (!email) {
-                return res.status(400).json({ message: 'Email is required' });
-            }
             const { division, district, full_address } = address_info;
-            const query = { email: email };
+            const query = { uuid: uuid };
             const option = { upsert: true };
+            if (!uuid) {
+                return res.status(400).json({ message: 'Unauthorized access' });
+            }
+            const isExisted = await userCollection.findOne(query);
+            if (!isExisted) {
+                return res.status(400).json({ message: 'access denied please contact to support' });
+            }
             // updated info
             const address = {
                 $set: {
@@ -272,10 +275,9 @@ async function run() {
                     },
                 },
             };
-
             try {
-                await userCollection.updateOne(query, address, option);
-                res.status(200).json({ message: 'Address updated or created successfully' });
+                const result = await userCollection.updateOne(query, address, option);
+                res.status(200).json({ message: 'Address updated or created successfully',result });
             } catch (error) {
                 console.error('Error updating address:', error);
                 res.status(500).json({ message: 'Internal server error' });
