@@ -69,57 +69,131 @@ async function run() {
 
 
         // create user
-        // post user create new user
+        // post user create new user email & pass
         app.post('/users', async (req, res) => {
-            const user_info = req.body;
-            const query = { email: user_info.email };
-            // Check if user already exists
-            const existed = await userCollection.findOne(query);
-            if (existed) {
-                return res.status(409).json({ message: 'User already exists' });
+            try {
+                const user_info = req.body;
+                const query = { email: user_info.email };
+
+                // Check if the user already exists
+                try {
+                    const existed = await userCollection.findOne(query);
+                    if (existed) {
+                        return res.status(409).json({ message: 'User already exists' });
+                    }
+                } catch (err) {
+                    console.error('Error checking existing user:', err.message);
+                    return res.status(500).json({ message: 'Error checking existing user' });
+                }
+
+                // Hash the password
+                let hashedPass;
+                try {
+                    hashedPass = bcrypt.hashSync(user_info.password, 10);
+                } catch (err) {
+                    console.error('Error hashing password:', err.message);
+                    return res.status(500).json({ message: 'Error processing password' });
+                }
+
+                // Insert the new user
+                try {
+                    const result = await userCollection.insertOne({
+                        ...user_info,
+                        password: hashedPass,
+                        role: 'user',
+                    });
+                    return res.status(201).send(result);
+                } catch (err) {
+                    console.error('Error inserting user into the database:', err.message);
+                    return res.status(500).json({ message: 'Error inserting user into the database' });
+                }
+            } catch (error) {
+                console.error('Unexpected error:', error.message);
+                res.status(500).json({ message: 'Internal Server Error' });
             }
-            // hashed password
-            const hashedPass = bcrypt.hashSync(user_info.password, 10);
-            // Insert new user
-            const result = await userCollection.insertOne({ ...user_info, password: hashedPass, role: 'user' });
-            return res.status(201).send(result);
         });
+
 
 
         //   create social account  
         app.post('/social-account', async (req, res) => {
-            const user = req.body;
-            const query = { email: user.email };
-            const isExisted = await userCollection.findOne(query);
-            if (isExisted) {
-                return res.status(200).json({ message: 'User already exists' });
+            try {
+                const user = req.body;
+                const query = { email: user.email };
+
+                try {
+                    // Check if the user already exists
+                    const isExisted = await userCollection.findOne(query);
+                    if (isExisted) {
+                        return res.status(200).json({ message: 'User already exists' });
+                    }
+                } catch (err) {
+                    console.error('Error checking existing user:', err.message);
+                    return res.status(500).json({ message: 'Error checking user existence' });
+                }
+
+                try {
+                    // Insert new user
+                    const result = await userCollection.insertOne({ ...user, role: 'user' });
+                    res.status(201).json({ message: 'User created successfully', result });
+                } catch (err) {
+                    console.error('Error inserting user into the database:', err.message);
+                    return res.status(500).json({ message: 'Error inserting user into the database' });
+                }
+            } catch (error) {
+                console.error('Unexpected error:', error.message);
+                res.status(500).json({ message: 'Internal Server Error' });
             }
-            else {
-                const result = await userCollection.insertOne({ ...user, role: 'user' });
-                res.status(201).json({ message: 'User created successfully', result });
-            }
-        })
+        });
+
         // login
         // login with email password
         app.post('/login', async (req, res) => {
-            const user = req.body;
-            console.log(user)
-            const query = { email: user.email };
-            const existedUser = await userCollection.findOne(query);
-            // Check if the user exists
-            if (!existedUser) {
-                return res.status(404).json({ message: "User not found" });
+            try {
+                const user = req.body;
+
+                // Validate request body
+                if (!user.email || !user.password) {
+                    return res.status(400).json({ message: "Email and password are required" });
+                }
+
+                try {
+                    // Check if the user exists
+                    const query = { email: user.email };
+                    const existedUser = await userCollection.findOne(query);
+
+                    if (!existedUser) {
+                        return res.status(404).json({ message: "User not found" });
+                    }
+
+                    try {
+                        // Check if the password matches
+                        const passwordMatched = await bcrypt.compare(user.password, existedUser.password);
+                        if (!passwordMatched) {
+                            return res.status(401).json({ message: "Invalid password" });
+                        }
+
+                        // Successful login
+                        return res.status(200).json({
+                            message: "Login successful",
+                            user: existedUser,
+                        });
+                    } catch (err) {
+                        console.error("Error verifying password:", err.message);
+                        return res.status(500).json({ message: "Error verifying password" });
+                    }
+                } catch (err) {
+                    console.error("Error querying user:", err.message);
+                    return res.status(500).json({ message: "Error checking user existence" });
+                }
+            } catch (error) {
+                console.error("Unexpected error:", error.message);
+                return res.status(500).json({ message: "Internal Server Error" });
             }
-            const passwordMatched = await bcrypt.compare(user.password, existedUser.password);
-            // Check if the password matched
-            if (!passwordMatched) {
-                return res.status(401).json({ message: "Invalid password" });
-            }
-            // Successful login
-            return res.status(200).json({ message: "Login successful", user: existedUser });
         });
 
 
+        // ISSUE
         // social login
         app.post('/social-login', async (req, res) => {
             try {
@@ -225,7 +299,31 @@ async function run() {
             const result = await productsCollection.find().toArray() || [];
             res.send(result)
         })
+
         // add a new product
+        app.post('/all-products', async (req, res) => {
+            const newProduct = req.body;
+            const result = await productsCollection.insertOne(newProduct);
+            res.send(result)
+        })
+
+        // update a product
+
+
+
+        // delete a product
+        app.delete('/all-products-admin/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await productsCollection.deleteOne(query);
+            res.send(result)
+        })
+
+
+
+
+        // product manage for customer/user
+        // get all product with filter
         app.get('/all-products', async (req, res) => {
             try {
                 const { brand, color, sort } = req.query;
@@ -258,27 +356,7 @@ async function run() {
                 res.status(500).send({ error: 'An error occurred while fetching products.' });
             }
         });
-        // update a product
 
-
-
-        // delete a product
-        app.delete('/all-products-admin/:id', async (req, res) => {
-            const id = req.params.id;
-            const query = { _id: new ObjectId(id) };
-            const result = await productsCollection.deleteOne(query);
-            res.send(result)
-        })
-
-
-
-
-        // product manage for customer/user
-        // get all products //TOD: check is needed
-        // app.get('/all-products', async (req, res) => {
-        //     const result = await productsCollection.find().toArray() || [];
-        //     res.send(result);
-        // })
         //    get product by id
         app.get('/all-products/:id', async (req, res) => {
             const id = req.params.id;
@@ -286,7 +364,8 @@ async function run() {
             const result = await productsCollection.findOne(query);
             res.send(result);
         })
-        //    get product by category
+
+        //    get product by category with filter
         app.get('/products/:category', async (req, res) => {
             const category = req.params.category;
             const { brand, color, sort } = req.query;
