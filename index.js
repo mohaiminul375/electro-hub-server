@@ -350,6 +350,13 @@ async function run() {
             const result = await cartCollection.find().toArray() || [];
             res.send(result);
         })
+        // get cart by user uuid
+        app.get('/all-carts/:uuid', async (req, res) => {
+            const uuid = req.params.uuid;
+            const query = { uuid: uuid };
+            const result = await cartCollection.find(query).toArray();
+            res.send(result);
+        })
         // add to cart
         app.post('/cart', async (req, res) => {
             const cartItem = req.body;
