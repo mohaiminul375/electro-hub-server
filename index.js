@@ -277,7 +277,7 @@ async function run() {
             };
             try {
                 const result = await userCollection.updateOne(query, address, option);
-                res.status(200).json({ message: 'Address updated or created successfully',result });
+                res.status(200).json({ message: 'Address updated or created successfully', result });
             } catch (error) {
                 console.error('Error updating address:', error);
                 res.status(500).json({ message: 'Internal server error' });
@@ -318,7 +318,23 @@ async function run() {
 
         // update a product
 
-
+        app.put('/all-products/:id', async (req, res) => {
+            const update_info = req.body;
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const option = { upsert: true };
+            try {
+                const updateDoc = {
+                    $set: {
+                        ...update_info
+                    }
+                }
+                const result = await productsCollection.updateOne(query, updateDoc, option);
+                res.send(result)
+            } catch (error) {
+                res.status(500).send({ error: 'An error occurred while fetching products.', error });
+            }
+        })
 
         // delete a product
         app.delete('/all-products-admin/:id', async (req, res) => {
@@ -327,6 +343,83 @@ async function run() {
             const result = await productsCollection.deleteOne(query);
             res.send(result)
         })
+
+        // cart management 
+        // all carts products
+        app.get('/all-carts', async (req, res) => {
+            const result = await cartCollection.find().toArray() || [];
+            res.send(result);
+        })
+        // add to cart
+        app.post('/cart', async (req, res) => {
+            const cartItem = req.body;
+            const { product_id, uuid, product_name, category, color, brand, price, img } = cartItem;
+
+            // Query to find the user's cart using uuid
+            const queryUser = { uuid: uuid };
+
+            try {
+                // Check if user exists in the cart collection
+                const findUser = await cartCollection.findOne(queryUser);
+
+                // If the user doesn't have a cart, create a new cart
+                if (!findUser) {
+                    const newCart = {
+                        uuid: uuid,
+                        items: [
+                            {
+                                product_id: product_id,
+                                product_name: product_name,
+                                category: category,
+                                color: color,
+                                brand: brand,
+                                price: price,
+                                img: img,
+                                quantity: 1, // Initial quantity is 1
+                            },
+                        ],
+                    };
+                    await cartCollection.insertOne(newCart);
+                    return res.status(201).json({ message: 'Product added to cart' });
+                }
+
+                // If user has a cart, check if the product is already in the cart
+                const existingProduct = findUser.items.find(item => item.product_id === product_id);
+
+                if (existingProduct) {
+                    // If the product is found, increase its quantity by 1
+                    existingProduct.quantity += 1;
+                    await cartCollection.updateOne(
+                        { uuid: uuid, "items.product_id": product_id },
+                        { $set: { "items.$.quantity": existingProduct.quantity } }
+                    );
+                    return res.status(200).json({ message: 'Product quantity updated' });
+                } else {
+                    // If the product is not in the cart, add it as a new item
+                    await cartCollection.updateOne(
+                        { uuid: uuid },
+                        {
+                            $push: {
+                                items: {
+                                    product_id: product_id,
+                                    product_name: product_name,
+                                    category: category,
+                                    color: color,
+                                    brand: brand,
+                                    price: price,
+                                    img: img,
+                                    quantity: 1
+                                }
+                            }
+                        }
+                    );
+                    return res.status(201).json({ message: 'Product added to cart' });
+                }
+            } catch (error) {
+                console.error(error);
+                res.status(500).json({ message: 'An error occurred while updating the cart' });
+            }
+        });
 
 
 
