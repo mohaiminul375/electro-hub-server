@@ -355,8 +355,29 @@ async function run() {
             const uuid = req.params.uuid;
             const query = { uuid: uuid };
             const result = await cartCollection.find(query).toArray();
-            res.send(result);
-        })
+
+            // Add total quantity and total price to each cart
+            const resultWithTotal = result.map(cart => {
+                let totalQuantity = 0;
+                let totalPrice = 0;
+
+                // Calculate total quantity and total price for each cart
+                cart.items.forEach(item => {
+                    totalQuantity += item.quantity;
+                    totalPrice += item.price * item.quantity;
+                });
+
+                // Return the cart with total quantity and total price
+                return {
+                    ...cart,
+                    totalQuantity,
+                    totalPrice
+                };
+            });
+
+            res.send(resultWithTotal);
+        });
+
         // add to cart
         app.post('/cart', async (req, res) => {
             const cartItem = req.body;
