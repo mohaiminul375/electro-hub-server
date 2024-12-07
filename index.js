@@ -450,6 +450,32 @@ async function run() {
         });
 
 
+        // update cat quantity
+        app.patch('/update-quantity', async (req, res) => {
+            const { uuid, action, productId } = req.body;
+
+            if (!uuid || !action || !productId) {
+                return res.status(400).send({ message: 'Invalid input' });
+            }
+
+            try {
+                const increment = action === 'plus' ? 1 : -1;
+
+                const result = await cartCollection.updateOne(
+                    { uuid, 'items.product_id': productId },
+                    { $inc: { 'items.$.quantity': increment } }
+                );
+
+                if (result.modifiedCount === 0) {
+                    return res.status(404).send({ message: 'Cart or product not found' });
+                }
+
+                res.send({ message: 'Quantity updated successfully' });
+            } catch (error) {
+                console.error(error);
+                res.status(500).send({ message: 'Internal server error' });
+            }
+        });
 
 
         // product manage for customer/user
