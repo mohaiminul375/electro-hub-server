@@ -49,6 +49,23 @@ async function run() {
                 res.status(500).send({ message: 'Failed to fetch users', error });
             }
         });
+        // get user info
+        app.get('/all-users/:uuid', async (req, res) => {
+            try {
+                const uuid = req.params.uuid;
+                const user = await userCollection.findOne({ uuid: uuid });
+
+                if (user) {
+                    const { password, ...userWithoutPassword } = user; // Exclude the password
+                    res.send(userWithoutPassword);
+                } else {
+                    res.status(404).send({ message: 'User not found' });
+                }
+            } catch (error) {
+                console.error('Error fetching user:', error);
+                res.status(500).send({ message: 'Failed to fetch user', error });
+            }
+        });
 
 
         // delete user
@@ -555,7 +572,11 @@ async function run() {
             }
         });
 
-
+        // SSL Commerz Payment
+        app.post('/create-payment', async (req, res) => {
+            const paymentInfo = req.body;
+            console.log(paymentInfo)
+        })
 
 
 
