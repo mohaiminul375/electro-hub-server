@@ -38,6 +38,8 @@ async function run() {
         const userCollection = client.db('electro-hub').collection('users');
         const productsCollection = client.db('electro-hub').collection('all-products');
         const cartCollection = client.db('electro-hub').collection('cart');
+        const paymentsCollection = client.db('electro-hub').collection('payments');
+        const ordersCollection = client.db('electro-hub').collection('all-order');
 
         // TODO: try catch
 
@@ -580,16 +582,17 @@ async function run() {
             console.log(paymentInfo)
             // Extract Information from client
             const { name, email, phone, division, district, full_address, total_price } = paymentInfo;
+            const trxId = new ObjectId().toString();
             // PAYMENT DATA
             const initiatePaymentData = {
                 store_id: `${process.env.STORE_ID}`,
                 store_passwd: `${process.env.STORE_PASS}`,
                 total_amount: total_price,
                 currency: "BDT",
-                tran_id: "REF123&",
-                success_url: "http://localhost:5000/success-payment",
-                fail_url: "http://yoursite.com/fail.php&",
-                cancel_url: "http://yoursite.com/cancel.php&",
+                tran_id: trxId,
+                success_url: "https://electro-hub-server.vercel.app/success-payment",
+                fail_url: "https://electro-hub-server.vercel.app/failed",
+                cancel_url: "https://electro-hub-server.vercel.app/cancel",
                 cus_name: name,
                 cus_email: email,
                 cus_add1: full_address,
@@ -621,16 +624,46 @@ async function run() {
                     "Content-Type": "application/x-www-form-urlencoded"
                 }
             })
-            console.log(response);
-            res.send({
-                paymentUrl: response?.data?.GatewayPageURL
-            })
+            // console.log(response);
+            // Save Info to DB
+            const saveData = {
+                customer_name: name,
+                customer_Phone: phone,
+                transaction_id: trxId,
+                status: 'pending',
+            }
+            const result = await paymentsCollection.insertOne(saveData);
+            if (result) {
+                res.send({
+                    paymentUrl: response?.data?.GatewayPageURL
+                })
+            }
         })
+        // success payment
         app.post('/success-payment', async (req, res) => {
-            const success_data = req.body();
+            const success_data = req.body;
             console.log(success_data, 'success data')
+            if (success_data.status !== 'VALID') {
+                throw new Error('Unauthorized Payment')
+            }
+            // Update payment status
+            const query = { transaction_id: success_data.tran_id }
+            const updateDoc = {
+                $set: {
+                    status: 'success'
+                }
+            }
+            const updateStatus = await paymentsCollection.updateOne(query, updateDoc)
+            res.redirect('http://localhost:3000/checkout/success')
         })
-
+        // failed payment
+        app.post('/failed', async (req, res) => {
+            res.redirect('http://localhost:3000/checkout/failed')
+        })
+        // cancel payment
+        app.post('/cancel', async (req, res) => {
+            res.redirect('http://localhost:3000/checkout/cancel')
+        })
 
 
 
