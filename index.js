@@ -6,8 +6,10 @@ require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
+const { default: axios } = require("axios");
 // middleware
 app.use(express.json());
+app.use(express.urlencoded());
 app.use(cors({
     origin: [
         "http://localhost:3000",
@@ -576,8 +578,58 @@ async function run() {
         app.post('/create-payment', async (req, res) => {
             const paymentInfo = req.body;
             console.log(paymentInfo)
+            // Extract Information from client
+            const { name, email, phone, division, district, full_address, total_price } = paymentInfo;
+            // PAYMENT DATA
+            const initiatePaymentData = {
+                store_id: `${process.env.STORE_ID}`,
+                store_passwd: `${process.env.STORE_PASS}`,
+                total_amount: total_price,
+                currency: "BDT",
+                tran_id: "REF123&",
+                success_url: "http://localhost:5000/success-payment",
+                fail_url: "http://yoursite.com/fail.php&",
+                cancel_url: "http://yoursite.com/cancel.php&",
+                cus_name: name,
+                cus_email: email,
+                cus_add1: full_address,
+                // cus_add2: "Dhaka&", //check require
+                cus_city: district,
+                cus_state: division,
+                cus_postcode: "None",
+                cus_country: "Bangladesh",
+                cus_phone: phone,
+                shipping_method: "No",
+                product_name: "example",
+                product_category: 'Gadget',
+                product_profile: "General",
+                ship_name: name,
+                ship_add1: full_address,
+                // ship_add2: "Dhaka&", //check
+                ship_city: district,
+                ship_state: division,
+                ship_postcode: "None",
+                ship_country: "Bangladesh",
+                multi_card_name: "mastercard,visacard,amexcard&",
+                value_a: "ref001_A&",
+                value_b: "ref002_B&",
+                value_c: "ref003_C&",
+                value_d: "ref004_D"
+            }
+            const response = await axios.post('https://sandbox.sslcommerz.com/gwprocess/v4/api.php', initiatePaymentData, {
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                }
+            })
+            console.log(response);
+            res.send({
+                paymentUrl: response?.data?.GatewayPageURL
+            })
         })
-
+        app.post('/success-payment', async (req, res) => {
+            const success_data = req.body();
+            console.log(success_data, 'success data')
+        })
 
 
 
