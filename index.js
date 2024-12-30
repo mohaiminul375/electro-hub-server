@@ -308,13 +308,6 @@ async function run() {
 
         // update role
 
-
-
-
-
-
-
-
         // admin-dashboard
         // manage products
         // get products for admin
@@ -542,7 +535,12 @@ async function run() {
             const result = await productsCollection.findOne(query);
             res.send(result);
         })
-
+        // get products in home page
+        app.get('/home-products', async (req, res) => {
+            // TODO: sort by review
+            const result = await productsCollection.find().limit(8).toArray() || [];
+            res.send(result )
+        })
         //    get product by category with filter
         app.get('/products/:category', async (req, res) => {
             const category = req.params.category;
