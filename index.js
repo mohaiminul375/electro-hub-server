@@ -13,6 +13,7 @@ app.use(express.urlencoded());
 app.use(cors({
     origin: [
         "http://localhost:3000",
+        "https://electro-hub-tau.vercel.app"
 
     ]
 }))
