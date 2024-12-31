@@ -831,8 +831,24 @@ async function run() {
                 res.status(500).json({ message: 'Internal Server Error' });
             }
         });
-
-
+        // Order Management
+        app.get('/pending-orders', async (req, res) => {
+            const query = { order_status: 'pending' }
+            const result = await ordersCollection.find(query).toArray() || [];
+            res.send(result)
+        })
+        app.get('/pending-orders/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await ordersCollection.findOne(query);
+            res.send(result)
+        })
+        app.get('/all-orders/:uuid', async (req, res) => {
+            const uuid = req.params.id;
+            const query = { uuid: uuid }
+            const result = await ordersCollection.find(query).toArray();
+            res.send(result)
+        })
 
         app.get('/test', async (req, res) => {
             const new_id_1 = uuidv4();
