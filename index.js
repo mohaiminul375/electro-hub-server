@@ -539,7 +539,7 @@ async function run() {
         app.get('/home-products', async (req, res) => {
             // TODO: sort by review
             const result = await productsCollection.find().limit(8).toArray() || [];
-            res.send(result )
+            res.send(result)
         })
         //    get product by category with filter
         app.get('/products/:category', async (req, res) => {
@@ -627,6 +627,7 @@ async function run() {
             // Save Info to DB
             const saveData = {
                 customer_name: name,
+                customer_email: email,
                 customer_Phone: phone,
                 transaction_id: trxId,
                 status: 'pending',
@@ -640,29 +641,91 @@ async function run() {
         })
         // success payment
         app.post('/success-payment', async (req, res) => {
-            const success_data = req.body;
-            console.log(success_data, 'success data')
-            if (success_data.status !== 'VALID') {
-                throw new Error('Unauthorized Payment')
-            }
-            // Update payment status
-            const query = { transaction_id: success_data.tran_id }
-            const updateDoc = {
-                $set: {
-                    status: 'success'
+            try {
+                const { status, tran_id, tran_date, card_issuer } = req.body;
+                console.log(req.body, 'success data');
+
+                // Validate payment status
+                if (status !== 'VALID' || !tran_id) {
+                    return res.status(400).json({ message: 'Invalid or Unauthorized Payment' });
                 }
+
+                // Update payment status
+                const query = { transaction_id: tran_id };
+                const updateDoc = { $set: { status: 'success', created_at: tran_date, payment_method: card_issuer } };
+                const result = await paymentsCollection.updateOne(query, updateDoc);
+
+                if (result.modifiedCount > 0) {
+                    return res.redirect('http://localhost:3000/checkout/success');
+                } else {
+                    return res.status(404).json({ message: 'Transaction not found' });
+                }
+            } catch (error) {
+                console.error('Error processing payment:', error);
+                res.status(500).json({ message: 'Internal Server Error' });
             }
-            const updateStatus = await paymentsCollection.updateOne(query, updateDoc)
-            res.redirect('http://localhost:3000/checkout/success')
-        })
+        });
+
         // failed payment
         app.post('/failed', async (req, res) => {
-            res.redirect('http://localhost:3000/checkout/failed')
-        })
+            try {
+                const { status, tran_id } = req.body;
+
+                // Validate status and transaction ID
+                if (status !== 'FAILED' || !tran_id) {
+                    return res.status(400).json({ message: 'Invalid request or status' });
+                }
+
+                // Delete the payment record
+                const query = { transaction_id: tran_id };
+                const updateDoc = { $set: { status: 'failed' } };
+                const result = await paymentsCollection.updateOne(query, updateDoc);
+
+                if (result.modifiedCount > 0) {
+                    return res.redirect('http://localhost:3000/checkout/failed');
+                } else {
+                    return res.status(404).json({ message: 'Transaction not found' });
+                }
+
+            } catch (error) {
+                console.error('Error handling failed payment:', error);
+                res.status(500).json({ message: 'Internal Server Error' });
+            }
+        });
+
         // cancel payment
         app.post('/cancel', async (req, res) => {
-            res.redirect('http://localhost:3000/checkout/cancel')
-        })
+            try {
+                const { status, tran_id } = req.body;
+
+                if (status === 'CANCELLED' && tran_id) {
+                    const query = { transaction_id: tran_id };
+                    const result = await paymentsCollection.deleteOne(query);
+
+                    if (result.deletedCount > 0) {
+                        return res.redirect('http://localhost:3000/checkout/cancel');
+                    } else {
+                        return res.status(404).json({ message: 'Transaction not found' });
+                    }
+                }
+
+                res.status(400).json({ message: 'Invalid cancel data' });
+            } catch (error) {
+                console.error('Error cancelling transaction:', error);
+                res.status(500).json({ message: 'Internal Server Error' });
+            }
+        });
+        // Get Payment info
+        app.get('/all-payments', async (req, res) => {
+            try {
+                const query = { status: { $ne: 'pending' } };
+                const result = await paymentsCollection.find(query).toArray();
+                res.send(result || []);
+            } catch (error) {
+                console.error('Error fetching payments:', error);
+                res.status(500).json({ message: 'Internal Server Error' });
+            }
+        });
 
 
 
