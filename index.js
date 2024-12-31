@@ -832,6 +832,7 @@ async function run() {
             }
         });
         // Order Management
+        // Pending Orders
         app.get('/pending-orders', async (req, res) => {
             const query = { order_status: 'pending' }
             const result = await ordersCollection.find(query).toArray() || [];
@@ -844,11 +845,35 @@ async function run() {
             res.send(result)
         })
         app.get('/all-orders/:uuid', async (req, res) => {
-            const uuid = req.params.id;
-            const query = { uuid: uuid }
+            const uuid = req.params.uuid;
+            const query = { customer_uuid: uuid }
             const result = await ordersCollection.find(query).toArray();
             res.send(result)
         })
+        app.put('/approved-order/:orderId', async (req, res) => {
+            const orderId = req.params.orderId;
+            const newData = req.body;
+            const query = { order_id: orderId }
+            const option = { upsert: true };
+            const updateDoc = {
+                $set: {
+                    order_status: 'approved',
+                    ...newData
+                }
+            }
+            const result = await ordersCollection.updateOne(query, updateDoc, option);
+            res.send(result)
+        })
+        // Approve orders
+        app.get('/approved-orders', async (req, res) => {
+            const query = { order_status: 'approved' }
+            const result = await ordersCollection.find(query).toArray() || [];
+            res.send(result);
+        })
+
+
+
+
 
         app.get('/test', async (req, res) => {
             const new_id_1 = uuidv4();
