@@ -575,96 +575,201 @@ async function run() {
             }
         });
 
+        // Create order Id
+        async function getCustomOrderId() {
+            const currentDate = new Date();
+            const datePrefix = currentDate.toISOString().slice(2, 10).replace(/-/g, ""); // Format YYMMDD
+
+            // Check if the document for the current date exists
+            let result = await ordersCollection.findOne({ date: datePrefix });
+
+            // If the document doesn't exist, create it and initialize the counter
+            if (!result) {
+                const newDoc = {
+                    date: datePrefix,
+                    counter: 1,
+                    // You can add additional fields like 'orderId', 'status', etc. if needed
+                };
+                await ordersCollection.insertOne(newDoc);
+                result = { counter: 1 }; // Initialize counter to 1 after insertion
+            } else {
+                // Increment the counter if the document exists
+                result = await ordersCollection.findOneAndUpdate(
+                    { date: datePrefix },
+                    { $inc: { counter: 1 } },
+                    { returnDocument: 'after' } // Return the updated document
+                );
+            }
+
+            // Get the updated counter value
+            const counter = result.counter;
+
+            // Ensure the serial number length starts at 5 digits, but grows dynamically
+            const serialLength = Math.max(5, counter.toString().length);
+            const serial = counter.toString().padStart(serialLength, '0'); // Format the serial number
+
+            // Return the custom order ID
+            return `${datePrefix}${serial}`;
+        }
+
+
+
+
+
+
         // SSL Commerz Payment
         app.post('/create-payment', async (req, res) => {
-            const paymentInfo = req.body;
-            console.log(paymentInfo)
-            // Extract Information from client
-            const { name, email, phone, division, district, full_address, total_price } = paymentInfo;
-            const trxId = new ObjectId().toString();
-            // PAYMENT DATA
-            const initiatePaymentData = {
-                store_id: `${process.env.STORE_ID}`,
-                store_passwd: `${process.env.STORE_PASS}`,
-                total_amount: total_price,
-                currency: "BDT",
-                tran_id: trxId,
-                success_url: "https://electro-hub-server.vercel.app/success-payment",
-                fail_url: "https://electro-hub-server.vercel.app/failed",
-                cancel_url: "https://electro-hub-server.vercel.app/cancel",
-                cus_name: name,
-                cus_email: email,
-                cus_add1: full_address,
-                // cus_add2: "Dhaka&", //check require
-                cus_city: district,
-                cus_state: division,
-                cus_postcode: "None",
-                cus_country: "Bangladesh",
-                cus_phone: phone,
-                shipping_method: "No",
-                product_name: "example",
-                product_category: 'Gadget',
-                product_profile: "General",
-                ship_name: name,
-                ship_add1: full_address,
-                // ship_add2: "Dhaka&", //check
-                ship_city: district,
-                ship_state: division,
-                ship_postcode: "None",
-                ship_country: "Bangladesh",
-                multi_card_name: "mastercard,visacard,amexcard&",
-                value_a: "ref001_A&",
-                value_b: "ref002_B&",
-                value_c: "ref003_C&",
-                value_d: "ref004_D"
-            }
-            const response = await axios.post('https://sandbox.sslcommerz.com/gwprocess/v4/api.php', initiatePaymentData, {
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded"
+            try {
+                const paymentInfo = req.body;
+                console.log(paymentInfo);
+
+                // Extract Information from client
+                const { name, email, phone, division, district, full_address, total_price, items, uuid } = paymentInfo;
+                const trxId = new ObjectId().toString();
+
+                // PAYMENT DATA
+                const initiatePaymentData = {
+                    store_id: `${process.env.STORE_ID}`,
+                    store_passwd: `${process.env.STORE_PASS}`,
+                    total_amount: total_price,
+                    currency: "BDT",
+                    tran_id: trxId,
+                    success_url: "https://electro-hub-server.vercel.app/success-payment",
+                    fail_url: "https://electro-hub-server.vercel.app/failed",
+                    cancel_url: "https://electro-hub-server.vercel.app/cancel",
+                    cus_name: name,
+                    cus_email: email,
+                    cus_add1: full_address,
+                    cus_city: district,
+                    cus_state: division,
+                    cus_postcode: "None",
+                    cus_country: "Bangladesh",
+                    cus_phone: phone,
+                    shipping_method: "No",
+                    product_name: "example",
+                    product_category: 'Gadget',
+                    product_profile: "General",
+                    ship_name: name,
+                    ship_add1: full_address,
+                    ship_city: district,
+                    ship_state: division,
+                    ship_postcode: "None",
+                    ship_country: "Bangladesh",
+                    multi_card_name: "mastercard,visacard,amexcard&",
+                    value_a: "ref001_A&",
+                    value_b: "ref002_B&",
+                    value_c: "ref003_C&",
+                    value_d: "ref004_D"
+                };
+
+                const response = await axios.post(
+                    'https://sandbox.sslcommerz.com/gwprocess/v4/api.php',
+                    initiatePaymentData,
+                    {
+                        headers: {
+                            "Content-Type": "application/x-www-form-urlencoded"
+                        }
+                    }
+                );
+
+                // Save Info to DB
+                const saveData = {
+                    customer_name: name,
+                    customer_email: email,
+                    customer_Phone: phone,
+                    transaction_id: trxId,
+                    status: 'pending',
+                };
+
+                // Create
+                const new_order = {
+                    customer_uuid: uuid,
+                    customer_name: name,
+                    customer_email: email,
+                    customer_Phone: phone,
+                    transaction_id: trxId,
+                    total_price: total_price,
+                    address: {
+                        division: division,
+                        district: district,
+                        full_address: full_address,
+                    },
+                    products: items
+                };
+
+                const createPayment = await paymentsCollection.insertOne(saveData);
+                const createOrder = await ordersCollection.insertOne(new_order);
+                console.log('inside create payment')
+                if (createPayment && createOrder) {
+                    res.send({
+                        paymentUrl: response?.data?.GatewayPageURL
+                    });
+                } else {
+                    throw new Error("Failed to save payment or order data.");
                 }
-            })
-            // console.log(response);
-            // Save Info to DB
-            const saveData = {
-                customer_name: name,
-                customer_email: email,
-                customer_Phone: phone,
-                transaction_id: trxId,
-                status: 'pending',
+            } catch (error) {
+                console.log("Error processing payment:", error);
+                res.status(500).send({
+                    message: "An error occurred while processing the payment.",
+                    error: error.message
+                });
             }
-            const result = await paymentsCollection.insertOne(saveData);
-            if (result) {
-                res.send({
-                    paymentUrl: response?.data?.GatewayPageURL
-                })
-            }
-        })
+        });
+
         // success payment
         app.post('/success-payment', async (req, res) => {
+            console.log('successfull payment')
+            const { status, tran_id, tran_date, card_issuer } = req.body;
+            const newOrderId = await getCustomOrderId();
+            console.log(req.body, 'Success data');
             try {
-                const { status, tran_id, tran_date, card_issuer } = req.body;
-                console.log(req.body, 'success data');
 
-                // Validate payment status
+                // Validate payment status and transaction ID
                 if (status !== 'VALID' || !tran_id) {
                     return res.status(400).json({ message: 'Invalid or Unauthorized Payment' });
                 }
 
-                // Update payment status
-                const query = { transaction_id: tran_id };
-                const updateDoc = { $set: { status: 'success', created_at: tran_date, payment_method: card_issuer } };
-                const result = await paymentsCollection.updateOne(query, updateDoc);
+                // Update the payment status in the database
+                const paymentQuery = { transaction_id: tran_id };
+                const orderQuery = { transaction_id: tran_id };
+                console.log(paymentQuery, orderQuery, 'Query')
+                const paymentUpdate = {
+                    $set: {
+                        status: 'success',
+                        created_at: tran_date,
+                        payment_method: card_issuer
+                    }
+                };
+                const paymentResult = await paymentsCollection.updateOne(paymentQuery, paymentUpdate);
 
-                if (result.modifiedCount > 0) {
+                // If payment update fails, return an error
+                if (paymentResult.modifiedCount === 0) {
+                    return res.status(404).json({ message: 'Payment transaction not found or already updated' });
+                }
+
+                // Update or create the order with the new order ID
+                const orderUpdate = {
+                    $set: {
+                        order_id: newOrderId,
+                        order_status: 'pending',
+                        payment_method: card_issuer,
+                        orderCreatedAt: tran_date,
+                    }
+                };
+                const orderResult = await ordersCollection.updateOne(orderQuery, orderUpdate);
+
+                // If the order was updated successfully, redirect to success page
+                if (orderResult.modifiedCount > 0) {
                     return res.redirect('http://localhost:3000/checkout/success');
                 } else {
-                    return res.status(404).json({ message: 'Transaction not found' });
+                    return res.status(404).json({ message: 'Order not found' });
                 }
             } catch (error) {
-                console.error('Error processing payment:', error);
+                console.log('Error processing payment:', error);
                 res.status(500).json({ message: 'Internal Server Error' });
             }
         });
+
 
         // failed payment
         app.post('/failed', async (req, res) => {
