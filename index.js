@@ -831,13 +831,32 @@ async function run() {
                 res.status(500).json({ message: 'Internal Server Error' });
             }
         });
+        // All Orders for Admin
+        app.get('/all-orders-admin', async (req, res) => {
+            try {
+                const result = await ordersCollection.find({ counter: { $exists: false } }).toArray();
+                res.status(200).send(result);
+            } catch (error) {
+                console.error("Error fetching orders:", error);
+                res.status(500).send({ message: "Internal Server Error" });
+            }
+        });
+
+        // Get single / order details by id
+        app.get('/all-orders-admin/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await ordersCollection.findOne(query);
+            res.send(result)
+        })
         // Order Management
-        // Pending Orders
+        // Pending Orders   
         app.get('/pending-orders', async (req, res) => {
             const query = { order_status: 'pending' }
             const result = await ordersCollection.find(query).toArray() || [];
             res.send(result)
         })
+        // Pending order details
         app.get('/pending-orders/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
@@ -902,8 +921,28 @@ async function run() {
             const result = await ordersCollection.find(query).toArray() || [];
             res.send(result)
         })
+        app.get('/packed-orders/:id', async (req, res) => {
+            // const query = { order_status: 'packed' }
+            const orderId = req.params.id;
+            const query = { _id: new ObjectId(orderId) }
+            const result = await ordersCollection.findOne(query)
+            res.send(result)
+        })
 
-
+        app.put('/shipped-orders/:orderId', async (req, res) => {
+            const orderId = req.params.orderId;
+            const newData = req.body;
+            const query = { order_id: orderId }
+            const option = { upsert: true };
+            const updateDoc = {
+                $set: {
+                    order_status: 'shipped',
+                    ...newData
+                }
+            }
+            const result = await ordersCollection.updateOne(query, updateDoc, option);
+            res.send(result)
+        })
         app.get('/test', async (req, res) => {
             const new_id_1 = uuidv4();
             const new_id = new_id_1.replace(/-/g, '').substring(0, 10);
