@@ -844,12 +844,14 @@ async function run() {
             const result = await ordersCollection.findOne(query);
             res.send(result)
         })
+        //Get All order for user by uuid
         app.get('/all-orders/:uuid', async (req, res) => {
             const uuid = req.params.uuid;
             const query = { customer_uuid: uuid }
             const result = await ordersCollection.find(query).toArray();
             res.send(result)
         })
+        // Make order approved by admin
         app.put('/approved-order/:orderId', async (req, res) => {
             const orderId = req.params.orderId;
             const newData = req.body;
@@ -864,15 +866,42 @@ async function run() {
             const result = await ordersCollection.updateOne(query, updateDoc, option);
             res.send(result)
         })
-        // Approve orders
+        // Approve orders get by admin
         app.get('/approved-orders', async (req, res) => {
             const query = { order_status: 'approved' }
             const result = await ordersCollection.find(query).toArray() || [];
             res.send(result);
         })
+        // get Approved order by uuid user
+        // TODO: Review it
+        app.get('/approved-orders/:uuid', async (req, res) => {
+            const uuid = req.params.uuid;
+            const query = { order_status: 'approved', customer_uuid: uuid }
+            const result = await ordersCollection.find().toArray();
+            res.send(result)
+        })
 
-
-
+        // Make order Packed by admin
+        app.put('/packed-orders/:orderId', async (req, res) => {
+            const orderId = req.params.orderId;
+            const newData = req.body;
+            const query = { order_id: orderId }
+            const option = { upsert: true };
+            const updateDoc = {
+                $set: {
+                    order_status: 'packed',
+                    ...newData
+                }
+            }
+            const result = await ordersCollection.updateOne(query, updateDoc, option);
+            res.send(result)
+        })
+        // Get All packed Order for Admin
+        app.get('/packed-orders', async (req, res) => {
+            const query = { order_status: 'packed' }
+            const result = await ordersCollection.find(query).toArray() || [];
+            res.send(result)
+        })
 
 
         app.get('/test', async (req, res) => {
