@@ -943,6 +943,11 @@ async function run() {
             const result = await ordersCollection.updateOne(query, updateDoc, option);
             res.send(result)
         })
+        app.get('/shipped-orders', async (req, res) => {
+            const query = { order_status: 'shipped' }
+            const result = await ordersCollection.find(query).toArray() || [];
+            res.send(result)
+        })
         app.get('/test', async (req, res) => {
             const new_id_1 = uuidv4();
             const new_id = new_id_1.replace(/-/g, '').substring(0, 10);
