@@ -842,7 +842,7 @@ async function run() {
             }
         });
 
-        // Get single / order details by id
+        // Get single / order details by id Admin
         app.get('/all-orders-admin/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
@@ -861,13 +861,6 @@ async function run() {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const result = await ordersCollection.findOne(query);
-            res.send(result)
-        })
-        //Get All order for user by uuid
-        app.get('/all-orders/:uuid', async (req, res) => {
-            const uuid = req.params.uuid;
-            const query = { customer_uuid: uuid }
-            const result = await ordersCollection.find(query).toArray();
             res.send(result)
         })
         // Make order approved by admin
@@ -896,10 +889,9 @@ async function run() {
         app.get('/approved-orders/:uuid', async (req, res) => {
             const uuid = req.params.uuid;
             const query = { order_status: 'approved', customer_uuid: uuid }
-            const result = await ordersCollection.find().toArray();
+            const result = await ordersCollection.find(query).toArray();
             res.send(result)
         })
-
         // Make order Packed by admin
         app.put('/packed-orders/:orderId', async (req, res) => {
             const orderId = req.params.orderId;
@@ -928,7 +920,6 @@ async function run() {
             const result = await ordersCollection.findOne(query)
             res.send(result)
         })
-
         app.put('/shipped-orders/:orderId', async (req, res) => {
             const orderId = req.params.orderId;
             const newData = req.body;
@@ -948,6 +939,26 @@ async function run() {
             const result = await ordersCollection.find(query).toArray() || [];
             res.send(result)
         })
+        // Order management for Users
+        //Get All order for user by uuid
+        app.get('/all-orders-users/:uuid', async (req, res) => {
+            const uuid = req.params.uuid;
+            const query = { customer_uuid: uuid }
+            const result = await ordersCollection.find(query).toArray();
+            res.send(result)
+        });
+        app.get('/to-ship', async (req, res) => {
+            try {
+                const result = await ordersCollection
+                    .find({ order_status: { $in: ['approved', 'packed'] } })
+                    .toArray();
+                res.send(result);
+            } catch (error) {
+                console.error('Error fetching orders:', error);
+                res.status(500).send({ message: 'Failed to fetch orders' });
+            }
+        });
+
         app.get('/test', async (req, res) => {
             const new_id_1 = uuidv4();
             const new_id = new_id_1.replace(/-/g, '').substring(0, 10);
