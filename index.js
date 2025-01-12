@@ -947,6 +947,7 @@ async function run() {
             const result = await ordersCollection.find(query).toArray();
             res.send(result)
         });
+        // To Ship for users
         app.get('/to-ship', async (req, res) => {
             try {
                 const result = await ordersCollection
@@ -956,6 +957,40 @@ async function run() {
             } catch (error) {
                 console.error('Error fetching orders:', error);
                 res.status(500).send({ message: 'Failed to fetch orders' });
+            }
+        });
+        // To Received for 
+        app.get('/to-received', async (req, res) => {
+            try {
+                const result = await ordersCollection
+                    .find({ order_status: { $in: ['shipped'] } })
+                    .toArray();
+                res.send(result);
+            } catch (error) {
+                console.error('Error fetching orders:', error);
+                res.status(500).send({ message: 'Failed to fetch shipped data' });
+            }
+        });
+        app.get('/delivered', async (req, res) => {
+            try {
+                const result = await ordersCollection
+                    .find({ order_status: { $in: ['delivered'] } })
+                    .toArray();
+                res.send(result);
+            } catch (error) {
+                console.error('Error fetching orders:', error);
+                res.status(500).send({ message: 'Failed to fetch delivered' });
+            }
+        });
+        app.get('/canceled', async (req, res) => {
+            try {
+                const result = await ordersCollection
+                    .find({ order_status: { $in: ['canceled'] } })
+                    .toArray();
+                res.send(result);
+            } catch (error) {
+                console.error('Error fetching orders:', error);
+                res.status(500).send({ message: 'Failed to fetch canceled data' });
             }
         });
 
