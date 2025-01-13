@@ -950,7 +950,7 @@ async function run() {
         // To Ship for users
         // To Ship for users
         app.get('/to-ship/:uuid', async (req, res) => {
-            const { uuid } = req.params;
+            const uuid = req.params.uuid;
 
             try {
                 const query = {
@@ -968,39 +968,58 @@ async function run() {
         });
 
         // To Received for 
-        app.get('/to-received', async (req, res) => {
+        app.get('/to-received/:uuid', async (req, res) => {
+            const uuid = req.params.uuid;
+
             try {
-                const result = await ordersCollection
-                    .find({ order_status: { $in: ['shipped'] } })
-                    .toArray();
-                res.send(result);
+                const query = {
+                    order_status: { $in: ['shipped'] },
+                    customer_uuid: uuid
+                };
+
+                const orders = await ordersCollection.find(query).toArray();
+
+                res.status(200).send(orders);
             } catch (error) {
-                console.error('Error fetching orders:', error);
-                res.status(500).send({ message: 'Failed to fetch shipped data' });
+                console.error('Error fetching orders:', error.message);
+                res.status(500).send({ message: 'Failed to fetch orders', error: error.message });
             }
         });
-        app.get('/delivered', async (req, res) => {
+        app.get('/delivered/:uuid', async (req, res) => {
+            const uuid = req.params.uuid;
+
             try {
-                const result = await ordersCollection
-                    .find({ order_status: { $in: ['delivered'] } })
-                    .toArray();
-                res.send(result);
+                const query = {
+                    order_status: { $in: ['delivered'] },
+                    customer_uuid: uuid
+                };
+
+                const orders = await ordersCollection.find(query).toArray();
+
+                res.status(200).send(orders);
             } catch (error) {
-                console.error('Error fetching orders:', error);
-                res.status(500).send({ message: 'Failed to fetch delivered' });
+                console.error('Error fetching orders:', error.message);
+                res.status(500).send({ message: 'Failed to fetch orders', error: error.message });
             }
         });
-        app.get('/canceled', async (req, res) => {
+        app.get('/canceled/:uuid', async (req, res) => {
+            const uuid = req.params.uuid;
+
             try {
-                const result = await ordersCollection
-                    .find({ order_status: { $in: ['canceled'] } })
-                    .toArray();
-                res.send(result);
+                const query = {
+                    order_status: { $in: ['canceled'] },
+                    customer_uuid: uuid
+                };
+
+                const orders = await ordersCollection.find(query).toArray();
+
+                res.status(200).send(orders);
             } catch (error) {
-                console.error('Error fetching orders:', error);
-                res.status(500).send({ message: 'Failed to fetch canceled data' });
+                console.error('Error fetching orders:', error.message);
+                res.status(500).send({ message: 'Failed to fetch orders', error: error.message });
             }
         });
+
 
         app.get('/test', async (req, res) => {
             const new_id_1 = uuidv4();
