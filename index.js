@@ -948,17 +948,25 @@ async function run() {
             res.send(result)
         });
         // To Ship for users
-        app.get('/to-ship', async (req, res) => {
+        // To Ship for users
+        app.get('/to-ship/:uuid', async (req, res) => {
+            const { uuid } = req.params;
+
             try {
-                const result = await ordersCollection
-                    .find({ order_status: { $in: ['approved', 'packed'] } })
-                    .toArray();
-                res.send(result);
+                const query = {
+                    order_status: { $in: ['approved', 'packed'] },
+                    customer_uuid: uuid
+                };
+
+                const orders = await ordersCollection.find(query).toArray();
+
+                res.status(200).send(orders);
             } catch (error) {
-                console.error('Error fetching orders:', error);
-                res.status(500).send({ message: 'Failed to fetch orders' });
+                console.error('Error fetching orders:', error.message);
+                res.status(500).send({ message: 'Failed to fetch orders', error: error.message });
             }
         });
+
         // To Received for 
         app.get('/to-received', async (req, res) => {
             try {
