@@ -958,6 +958,12 @@ async function run() {
             res.send(result)
         })
 
+        app.get('/delivered', async (req, res) => {
+            const query = { order_status: 'delivered' }
+            const result = await ordersCollection.find(query).toArray() || [];
+            res.send(result)
+        })
+
 
         // Order management for Users
         //Get All order for user by uuid
