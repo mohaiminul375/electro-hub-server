@@ -884,6 +884,7 @@ async function run() {
             const result = await ordersCollection.find(query).toArray() || [];
             res.send(result);
         })
+
         // get Approved order by uuid user
         // TODO: Review it
         app.get('/approved-orders/:uuid', async (req, res) => {
@@ -939,6 +940,25 @@ async function run() {
             const result = await ordersCollection.find(query).toArray() || [];
             res.send(result)
         })
+        // Make order shipped
+        app.put('/delivered/:orderId', async (req, res) => {
+            const orderId = req.params.orderId;
+            const query = { order_id: orderId }
+            const newData = req.body;
+            console.log(orderId, newData)
+            const option = { upsert: true };
+            const updateDoc = {
+                $set: {
+                    order_status: 'delivered',
+                    ...newData
+                }
+            }
+            const result = await ordersCollection.updateOne(query, updateDoc, option)
+            console.log(result)
+            res.send(result)
+        })
+
+
         // Order management for Users
         //Get All order for user by uuid
         app.get('/all-orders-users/:uuid', async (req, res) => {
