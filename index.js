@@ -741,6 +741,25 @@ async function run() {
                     }
                 };
                 const paymentResult = await paymentsCollection.updateOne(paymentQuery, paymentUpdate);
+                // Delete cart for a specific order
+                const order = await ordersCollection.findOne(orderQuery);
+
+                if (order) {
+                    const { customer_uuid } = order; 
+                    if (customer_uuid) {
+                        const deleteResult = await cartCollection.deleteOne({ uuid: customer_uuid });
+
+                        if (deleteResult.deletedCount > 0) {
+                            console.log(`Successfully deleted cart for customer_uuid: ${customer_uuid}`);
+                        } else {
+                            console.log(`No cart found for customer_uuid: ${customer_uuid}`);
+                        }
+                    } else {
+                        console.log('No customer_uuid associated with the order.');
+                    }
+                } else {
+                    console.log('Order not found with the given query.');
+                }
 
                 // If payment update fails, return an error
                 if (paymentResult.modifiedCount === 0) {
