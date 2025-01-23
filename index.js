@@ -142,6 +142,7 @@ async function run() {
         app.post('/social-account', async (req, res) => {
             try {
                 const user = req.body;
+                const id = user.id;
                 const query = { email: user.email };
 
                 try {
@@ -157,7 +158,7 @@ async function run() {
 
                 try {
                     // Insert new user
-                    const result = await userCollection.insertOne({ ...user, role: 'user' });
+                    const result = await userCollection.insertOne({ ...user, role: 'user', uuid: id });
                     res.status(201).json({ message: 'User created successfully', result });
                 } catch (err) {
                     console.error('Error inserting user into the database:', err.message);
@@ -745,7 +746,7 @@ async function run() {
                 const order = await ordersCollection.findOne(orderQuery);
 
                 if (order) {
-                    const { customer_uuid } = order; 
+                    const { customer_uuid } = order;
                     if (customer_uuid) {
                         const deleteResult = await cartCollection.deleteOne({ uuid: customer_uuid });
 
