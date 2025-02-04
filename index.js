@@ -538,8 +538,9 @@ async function run() {
         })
         // get products in home page
         app.get('/home-products', async (req, res) => {
+            const query = { status: 'in_stock' }
             // TODO: sort by review
-            const result = await productsCollection.find().limit(8).toArray() || [];
+            const result = await productsCollection.find(query).limit(8).toArray() || [];
             res.send(result)
         })
         //    get product by category with filter
