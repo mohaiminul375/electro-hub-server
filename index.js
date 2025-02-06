@@ -871,6 +871,24 @@ async function run() {
             res.send(result)
         })
         // Order Management
+        // Order summary
+        app.get('/orders-summary', async (req, res) => {
+            try {
+                const pendingFilter = { order_status: 'pending' };
+                const approvedFilter = { order_status: 'approved' }
+                const packedFilter = { order_status: 'packed' }
+                const shippedFilter = { order_status: 'shipped' }
+                // Return data
+                const pendingOrdersCount = await ordersCollection.countDocuments(pendingFilter);
+                const approvedOrdersCount = await ordersCollection.countDocuments(approvedFilter);
+                const packedOrdersCount = await ordersCollection.countDocuments(packedFilter);
+                const shippedOrdersCount = await ordersCollection.countDocuments(shippedFilter);
+
+                res.json({ pendingOrdersCount, approvedOrdersCount, packedOrdersCount, shippedOrdersCount });
+            } catch (error) {
+                res.status(500).json({ message: 'Internal Server Error', error: error.message });
+            }
+        });
         // Pending Orders   
         app.get('/pending-orders', async (req, res) => {
             const query = { order_status: 'pending' }
