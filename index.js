@@ -1002,7 +1002,21 @@ async function run() {
             const result = await ordersCollection.find(query).toArray() || [];
             res.send(result)
         })
-
+        // Cancel By Admin
+        app.put('/canceled-order/:orderId', async (req, res) => {
+            const orderId = req.params.orderId;
+            const newData = req.body;
+            const query = { order_id: orderId }
+            const option = { upsert: true };
+            const updateDoc = {
+                $set: {
+                    order_status: 'canceled',
+                    ...newData
+                }
+            }
+            const result = await ordersCollection.updateOne(query, updateDoc, option);
+            res.send(result)
+        })
 
         // Order management for Users
         //Get All order for user by uuid
