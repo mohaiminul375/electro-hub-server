@@ -781,7 +781,7 @@ async function run() {
 
                 // If the order was updated successfully, redirect to success page
                 if (orderResult.modifiedCount > 0) {
-                    return res.redirect('http://localhost:3000/checkout/success');
+                    return res.redirect('https://electro-hub-tau.vercel.app/checkout/success');
                 } else {
                     return res.status(404).json({ message: 'Order not found' });
                 }
@@ -808,7 +808,7 @@ async function run() {
                 const result = await paymentsCollection.updateOne(query, updateDoc);
 
                 if (result.modifiedCount > 0) {
-                    return res.redirect('http://localhost:3000/checkout/failed');
+                    return res.redirect('https://electro-hub-tau.vercel.app/checkout/failed');
                 } else {
                     return res.status(404).json({ message: 'Transaction not found' });
                 }
@@ -829,7 +829,7 @@ async function run() {
                     const result = await paymentsCollection.deleteOne(query);
 
                     if (result.deletedCount > 0) {
-                        return res.redirect('http://localhost:3000/checkout/cancel');
+                        return res.redirect('https://electro-hub-tau.vercel.app/checkout/cancel');
                     } else {
                         return res.status(404).json({ message: 'Transaction not found' });
                     }
