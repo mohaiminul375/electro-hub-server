@@ -878,13 +878,19 @@ async function run() {
                 const approvedFilter = { order_status: 'approved' }
                 const packedFilter = { order_status: 'packed' }
                 const shippedFilter = { order_status: 'shipped' }
+                const deliveredFilter = { order_status: 'delivered' }
+                const canceledFilter = { order_status: 'canceled' }
                 // Return data
                 const pendingOrdersCount = await ordersCollection.countDocuments(pendingFilter);
                 const approvedOrdersCount = await ordersCollection.countDocuments(approvedFilter);
                 const packedOrdersCount = await ordersCollection.countDocuments(packedFilter);
                 const shippedOrdersCount = await ordersCollection.countDocuments(shippedFilter);
+                const deliveredOrdersCount = await ordersCollection.countDocuments(deliveredFilter);
+                const allOrdersCount = await ordersCollection.countDocuments({ counter: { $exists: false } });
+                const canceledOrdersCount = await ordersCollection.countDocuments(canceledFilter);
+                const paymentHistoryCount = await paymentsCollection.countDocuments();
 
-                res.json({ pendingOrdersCount, approvedOrdersCount, packedOrdersCount, shippedOrdersCount });
+                res.json({ pendingOrdersCount, approvedOrdersCount, packedOrdersCount, shippedOrdersCount, deliveredOrdersCount, allOrdersCount, canceledOrdersCount, packedOrdersCount, paymentHistoryCount });
             } catch (error) {
                 res.status(500).json({ message: 'Internal Server Error', error: error.message });
             }
@@ -1001,6 +1007,12 @@ async function run() {
             const query = { order_status: 'delivered' }
             const result = await ordersCollection.find(query).toArray() || [];
             res.send(result)
+        })
+        // all canceled order
+        app.get('/canceled-orders', async (req, res) => {
+            const query = { order_status: 'canceled' }
+            const result = await ordersCollection.find(query).toArray() || [];
+            res.send(result);
         })
         // Cancel By Admin
         app.put('/canceled-order/:orderId', async (req, res) => {
