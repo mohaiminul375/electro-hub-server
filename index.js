@@ -844,7 +844,12 @@ async function run() {
         // Get Payment info
         app.get('/all-payments', async (req, res) => {
             try {
+                const { tran_id } = req.query;
+                // excluded pending status
                 const query = { status: { $ne: 'pending' } };
+                if (tran_id) {
+                    query.transaction_id = tran_id;
+                }
                 const result = await paymentsCollection.find(query).toArray();
                 res.send(result || []);
             } catch (error) {
@@ -855,7 +860,14 @@ async function run() {
         // All Orders for Admin
         app.get('/all-orders-admin', async (req, res) => {
             try {
-                const result = await ordersCollection.find({ counter: { $exists: false } }).toArray();
+                // order id form front-end
+                const { order_id } = req.query;
+                // counter value wont show
+                let query = { counter: { $exists: false } };
+                if (order_id) {
+                    query.order_id = order_id;
+                }
+                const result = await ordersCollection.find(query).toArray();
                 res.status(200).send(result);
             } catch (error) {
                 console.error("Error fetching orders:", error);
