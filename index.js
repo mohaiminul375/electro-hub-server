@@ -313,15 +313,22 @@ async function run() {
         // manage products
         // get products for admin
         app.get('/all-products-admin', async (req, res) => {
-            // const brand = req.query.brand;
-            // const price = req.query.price;
-            // const color = req.query.color;
-            // const query = {
-            //     $or: [
-            //         { brand:}
-            //     ]
-            // }
-            const result = await productsCollection.find().toArray() || [];
+            // Query from front end
+            const { brand, category, status, product_name } = req.query;
+            const query = {}
+            if (brand && brand !== '') {
+                query.brand = brand;
+            }
+            if (category && category !== '') {
+                query.category = category;
+            }
+            if (status && status !== '') {
+                query.status = status;
+            }
+            if (product_name && product_name !== '') {
+                query.product_name = { $regex: product_name, $options: 'i' };
+            }
+            const result = await productsCollection.find(query).toArray() || [];
             res.send(result)
         })
 
