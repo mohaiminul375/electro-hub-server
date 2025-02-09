@@ -137,7 +137,6 @@ async function run() {
         });
 
 
-
         //   create social account  
         app.post('/social-account', async (req, res) => {
             try {
@@ -273,6 +272,7 @@ async function run() {
                 res.status(500).json({ message: 'Server error occurred while updating the profile' });
             }
         });
+
         // update address
         app.put('/update-address', async (req, res) => {
             const address_info = req.body;
@@ -307,7 +307,7 @@ async function run() {
             }
         });
 
-        // update role
+        //TODO: update role
 
         // admin-dashboard
         // manage products
@@ -340,7 +340,6 @@ async function run() {
         })
 
         // update a product
-
         app.put('/all-products/:id', async (req, res) => {
             const update_info = req.body;
             const id = req.params.id;
@@ -373,6 +372,7 @@ async function run() {
             const result = await cartCollection.find().toArray() || [];
             res.send(result);
         })
+
         // get cart by user uuid
         app.get('/all-carts/:uuid', async (req, res) => {
             const uuid = req.params.uuid;
@@ -446,7 +446,7 @@ async function run() {
                     );
                     return res.status(200).json({ message: 'Product quantity updated' });
                 } else {
-                    // If the product is not in the cart, add it as a new item
+                    // If the product is not in the cart, add it as a new item 
                     await cartCollection.updateOne(
                         { uuid: uuid },
                         {
@@ -471,7 +471,6 @@ async function run() {
                 res.status(500).json({ message: 'An error occurred while updating the cart' });
             }
         });
-
 
         // update cat quantity
         app.patch('/update-quantity', async (req, res) => {
@@ -505,7 +504,7 @@ async function run() {
         // get all product with filter
         app.get('/all-products', async (req, res) => {
             try {
-                const { brand, color, sort } = req.query;
+                const { brand, color, sort, searchName } = req.query;
                 const query = {};
                 // append brand color
                 if (brand && brand !== '') {
@@ -514,7 +513,9 @@ async function run() {
                 if (color && color !== '') {
                     query.color = color;
                 }
-
+                if (searchName && searchName !== '') {
+                    query.product_name = { $regex: searchName, $options: 'i' };
+                }
                 // Sorting logic: default to ascending if sort is invalid
                 let sortOptions = {};
                 if (sort === 'high-to-low') {
@@ -543,6 +544,7 @@ async function run() {
             const result = await productsCollection.findOne(query);
             res.send(result);
         })
+        
         // get products in home page
         app.get('/home-products', async (req, res) => {
             const query = { status: 'in_stock' }
@@ -550,6 +552,7 @@ async function run() {
             const result = await productsCollection.find(query).limit(8).toArray() || [];
             res.send(result)
         })
+
         //    get product by category with filter
         app.get('/products/:category', async (req, res) => {
             const category = req.params.category;
@@ -620,9 +623,6 @@ async function run() {
             // Return the custom order ID
             return `${datePrefix}${serial}`;
         }
-
-
-
 
 
 
