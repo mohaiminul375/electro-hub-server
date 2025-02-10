@@ -74,19 +74,17 @@ async function run() {
 
 
         // delete user
-        app.delete('/all-users/:id', async (req, res) => {
-            try {
-                const userId = req.params.id;
-                console.log(userId)
-                const query = { _id: new ObjectId(userId) }
-                console.log(query)
-                const result = await userCollection.deleteOne(query)
-                res.send(result);
-            }
-            catch (error) {
-                res.status(500).send({ message: 'An error occurred while deleting the user.' });
-            }
-        })
+        // app.delete('/all-users/:id', async (req, res) => {
+        //     try {
+        //         const userId = req.params.id;
+        //         const query = { _id: new ObjectId(userId) }
+        //         const result = await userCollection.deleteOne(query)
+        //         res.send(result);
+        //     }
+        //     catch (error) {
+        //         res.status(500).send({ message: 'An error occurred while deleting the user.' });
+        //     }
+        // })
 
 
         // create user
@@ -221,8 +219,6 @@ async function run() {
         app.post('/social-login', async (req, res) => {
             try {
                 const user = req.body;
-                console.log(user);
-
                 const query = { email: user.email };
                 const isExisted = await userCollection.findOne(query);
 
@@ -241,7 +237,6 @@ async function run() {
         // update profile
         app.put('/update-profile', async (req, res) => {
             const user_info = req.body;
-            console.log(user_info)
             const uuid = user_info.uuid;
             const query = { uuid: uuid };
             const option = { upsert: true };
@@ -308,6 +303,18 @@ async function run() {
         });
 
         //TODO: update role
+        app.patch('/all-users/:id', async (req, res) => {
+            const userId = req.params.id
+            const { newRole } = req.body;
+            const query = { _id: new ObjectId(userId) }
+            const updateDoc = {
+                $set: {
+                    role: newRole,
+                }
+            }
+            const result = await userCollection.updateOne(query, updateDoc)
+            res.send(result);
+        })
 
         // admin-dashboard
         // manage products
@@ -475,14 +482,12 @@ async function run() {
         // update cat quantity
         app.patch('/update-quantity', async (req, res) => {
             const { uuid, action, productId } = req.body;
-
             if (!uuid || !action || !productId) {
                 return res.status(400).send({ message: 'Invalid input' });
             }
 
             try {
                 const increment = action === 'plus' ? 1 : -1;
-
                 const result = await cartCollection.updateOne(
                     { uuid, 'items.product_id': productId },
                     { $inc: { 'items.$.quantity': increment } }
@@ -544,7 +549,7 @@ async function run() {
             const result = await productsCollection.findOne(query);
             res.send(result);
         })
-        
+
         // get products in home page
         app.get('/home-products', async (req, res) => {
             const query = { status: 'in_stock' }
@@ -630,8 +635,6 @@ async function run() {
         app.post('/create-payment', async (req, res) => {
             try {
                 const paymentInfo = req.body;
-                console.log(paymentInfo);
-
                 // Extract Information from client
                 const { name, email, phone, division, district, full_address, total_price, items, uuid } = paymentInfo;
                 const trxId = new ObjectId().toString();
@@ -708,7 +711,6 @@ async function run() {
 
                 const createPayment = await paymentsCollection.insertOne(saveData);
                 const createOrder = await ordersCollection.insertOne(new_order);
-                console.log('inside create payment')
                 if (createPayment && createOrder) {
                     res.send({
                         paymentUrl: response?.data?.GatewayPageURL
@@ -727,10 +729,8 @@ async function run() {
 
         // success payment
         app.post('/success-payment', async (req, res) => {
-            console.log('successfull payment')
             const { status, tran_id, tran_date, card_issuer } = req.body;
             const newOrderId = await getCustomOrderId();
-            console.log(req.body, 'Success data');
             try {
 
                 // Validate payment status and transaction ID
@@ -741,7 +741,6 @@ async function run() {
                 // Update the payment status in the database
                 const paymentQuery = { transaction_id: tran_id };
                 const orderQuery = { transaction_id: tran_id };
-                console.log(paymentQuery, orderQuery, 'Query')
                 const paymentUpdate = {
                     $set: {
                         status: 'success',
@@ -1009,7 +1008,6 @@ async function run() {
             const orderId = req.params.orderId;
             const query = { order_id: orderId }
             const newData = req.body;
-            console.log(orderId, newData)
             const option = { upsert: true };
             const updateDoc = {
                 $set: {
@@ -1018,7 +1016,6 @@ async function run() {
                 }
             }
             const result = await ordersCollection.updateOne(query, updateDoc, option)
-            console.log(result)
             res.send(result)
         })
 
@@ -1131,11 +1128,11 @@ async function run() {
         });
 
 
-        app.get('/test', async (req, res) => {
-            const new_id_1 = uuidv4();
-            const new_id = new_id_1.replace(/-/g, '').substring(0, 10);
-            res.send({ new_id, new_id_1 })
-        })
+        // app.get('/test', async (req, res) => {
+        //     const new_id_1 = uuidv4();
+        //     const new_id = new_id_1.replace(/-/g, '').substring(0, 10);
+        //     res.send({ new_id, new_id_1 })
+        // })
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
